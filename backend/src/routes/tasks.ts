@@ -25,12 +25,16 @@ const auth = async (
   }
 };
 
-// Get all tasks for user (with optional status filter)
+// Get all tasks for user (with optional status and search filter)
 router.get("/", auth, async (req: any, res: express.Response) => {
   try {
     const filter: any = { user: req.userId };
     if (req.query.status) {
       filter.status = req.query.status;
+    }
+    if (req.query.q) {
+      const regex = new RegExp(req.query.q, "i");
+      filter.$or = [{ title: regex }, { notes: regex }];
     }
     const tasks = await Task.find(filter);
     res.json(tasks);
