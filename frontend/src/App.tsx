@@ -1,457 +1,286 @@
 import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-  useLocation,
-  Navigate,
-} from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { Task, taskService } from "./services/api";
-import "./App.css";
+import { Plus, Search, Archive } from "lucide-react";
+import TaskForm from "./components/TaskForm";
+import TaskItem from "./components/TaskItem";
 
-// Components
-const Sidebar = () => {
-  const location = useLocation();
-  const { user, logout } = useAuth();
+const NirvanaGTD = () => {
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [contexts, setContexts] = useState<string[]>([
+    "@home",
+    "@work",
+    "@phone",
+    "@computer",
+    "@errands",
+  ]);
+  const [activeView, setActiveView] = useState("inbox");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [newTask, setNewTask] = useState({
+    title: "",
+    notes: "",
+    project: "",
+    context: "",
+    dueDate: "",
+    energy: "medium",
+    timeEstimate: "",
+  });
 
-  return (
-    <div className="sidebar">
-      <h2 style={{ marginBottom: "2rem", color: "var(--primary-color)" }}>
-        GTD App
-      </h2>
-      <div style={{ marginBottom: "2rem" }}>
-        <p style={{ color: "var(--text-secondary)" }}>Welcome, {user?.name}</p>
-        <button
-          onClick={logout}
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
-            padding: "0.5rem 0",
-          }}
-        >
-          Logout
-        </button>
-      </div>
-      <nav>
-        <Link
-          to="/"
-          className={`nav-item ${location.pathname === "/" ? "active" : ""}`}
-        >
-          <i className="fas fa-tasks"></i>
-          Inbox
-        </Link>
-        <Link
-          to="/next-actions"
-          className={`nav-item ${
-            location.pathname === "/next-actions" ? "active" : ""
-          }`}
-        >
-          <i className="fas fa-forward"></i>
-          Next Actions
-        </Link>
-        <Link
-          to="/projects"
-          className={`nav-item ${
-            location.pathname === "/projects" ? "active" : ""
-          }`}
-        >
-          <i className="fas fa-project-diagram"></i>
-          Projects
-        </Link>
-        <Link
-          to="/waiting-for"
-          className={`nav-item ${
-            location.pathname === "/waiting-for" ? "active" : ""
-          }`}
-        >
-          <i className="fas fa-clock"></i>
-          Waiting For
-        </Link>
-        <Link
-          to="/someday"
-          className={`nav-item ${
-            location.pathname === "/someday" ? "active" : ""
-          }`}
-        >
-          <i className="fas fa-calendar"></i>
-          Someday/Maybe
-        </Link>
-      </nav>
-    </div>
-  );
-};
-
-const TaskList = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  // Initialize with sample data
   useEffect(() => {
-    loadTasks();
+    const sampleTasks = [
+      {
+        id: 1,
+        title: "Review quarterly reports",
+        notes: "Focus on Q4 performance metrics",
+        project: "Work Review",
+        context: "@work",
+        dueDate: "2025-06-25",
+        energy: "high",
+        timeEstimate: "2h",
+        status: "inbox",
+        completed: false,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 2,
+        title: "Call dentist for appointment",
+        notes: "Schedule regular checkup",
+        project: "",
+        context: "@phone",
+        dueDate: "",
+        energy: "low",
+        timeEstimate: "10m",
+        status: "next",
+        completed: false,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    const sampleProjects = [
+      {
+        id: 1,
+        name: "Work Review",
+        description: "Annual performance review process",
+      },
+      {
+        id: 2,
+        name: "Home Renovation",
+        description: "Kitchen remodel project",
+      },
+    ];
+
+    setTasks(sampleTasks);
+    setProjects(sampleProjects);
   }, []);
 
-  const loadTasks = async () => {
-    try {
-      const data = await taskService.getTasks();
-      setTasks(data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to load tasks");
-    } finally {
-      setLoading(false);
-    }
+  const addTask = (formData: any) => {
+    if (!formData.title.trim()) return;
+    const task = {
+      id: Date.now(),
+      ...formData,
+      status: "inbox",
+      completed: false,
+      createdAt: new Date().toISOString(),
+    };
+    setTasks([...tasks, task]);
+    setShowAddTask(false);
   };
 
-  const handleTaskToggle = async (taskId: string, completed: boolean) => {
-    try {
-      await taskService.updateTask(taskId, { completed });
-      setTasks(
-        tasks.map((task) =>
-          task._id === taskId ? { ...task, completed } : task
-        )
+  const updateTask = (id: number, updates: any) => {
+    setTasks(
+      tasks.map((task) => (task.id === id ? { ...task, ...updates } : task))
+    );
+  };
+
+  const deleteTask = (id: number) => {
+    setTasks(tasks.filter((task) => task.id !== id));
+  };
+
+  const completeTask = (id: number) => {
+    updateTask(id, { completed: true, completedAt: new Date().toISOString() });
+  };
+
+  const moveTaskToStatus = (id: number, status: string) => {
+    updateTask(id, { status });
+  };
+
+  const filteredTasks = tasks.filter((task) => {
+    if (searchTerm) {
+      return (
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.notes.toLowerCase().includes(searchTerm.toLowerCase())
       );
-    } catch (err) {
-      setError("Failed to update task");
     }
-  };
+    switch (activeView) {
+      case "inbox":
+        return task.status === "inbox" && !task.completed;
+      case "next":
+        return task.status === "next" && !task.completed;
+      case "waiting":
+        return task.status === "waiting" && !task.completed;
+      case "scheduled":
+        return task.status === "scheduled" && !task.completed;
+      case "someday":
+        return task.status === "someday" && !task.completed;
+      case "completed":
+        return task.completed;
+      default:
+        return !task.completed;
+    }
+  });
 
-  if (loading) return <div>Loading tasks...</div>;
-  if (error) return <div style={{ color: "red" }}>{error}</div>;
+  const sidebarItems = [
+    {
+      id: "inbox",
+      label: "Inbox",
+      count: tasks.filter((t) => t.status === "inbox" && !t.completed).length,
+    },
+    {
+      id: "next",
+      label: "Next Actions",
+      count: tasks.filter((t) => t.status === "next" && !t.completed).length,
+    },
+    {
+      id: "waiting",
+      label: "Waiting For",
+      count: tasks.filter((t) => t.status === "waiting" && !t.completed).length,
+    },
+    {
+      id: "scheduled",
+      label: "Scheduled",
+      count: tasks.filter((t) => t.status === "scheduled" && !t.completed)
+        .length,
+    },
+    {
+      id: "someday",
+      label: "Someday/Maybe",
+      count: tasks.filter((t) => t.status === "someday" && !t.completed).length,
+    },
+    {
+      id: "completed",
+      label: "Completed",
+      count: tasks.filter((t) => t.completed).length,
+    },
+  ];
 
   return (
-    <div className="task-list">
-      {tasks.map((task) => (
-        <div key={task._id} className="task-item">
-          <input
-            type="checkbox"
-            className="task-checkbox"
-            checked={task.completed}
-            onChange={() => handleTaskToggle(task._id, !task.completed)}
-          />
-          <div className="task-content">
-            <div className="task-title">{task.title}</div>
-            <div className="task-meta">
-              {task.dueDate &&
-                `Due: ${new Date(task.dueDate).toLocaleDateString()}`}
-              {task.priority && ` • Priority: ${task.priority}`}
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div className="p-4 border-b">
+          <h1 className="text-xl font-bold text-gray-900">Nirvana GTD</h1>
+        </div>
+        <nav className="flex-1 p-4">
+          <div className="space-y-1">
+            {sidebarItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveView(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-left rounded-lg transition-colors ${
+                  activeView === item.id
+                    ? "bg-blue-50 text-blue-700 border border-blue-200"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span>{item.label}</span>
+                {item.count > 0 && (
+                  <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">
+                    {item.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </nav>
+      </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 capitalize">
+              {activeView === "next"
+                ? "Next Actions"
+                : activeView === "waiting"
+                ? "Waiting For"
+                : activeView === "someday"
+                ? "Someday/Maybe"
+                : activeView}
+            </h2>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search tasks..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                />
+              </div>
+              <button
+                onClick={() => setShowAddTask(true)}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Task
+              </button>
             </div>
           </div>
         </div>
-      ))}
-    </div>
-  );
-};
-
-const MainContent = () => {
-  const { user } = useAuth();
-  console.log(user);
-  if (!user) return <Navigate to="/login" />;
-
-  return (
-    <div className="main-content">
-      <h1 style={{ marginBottom: "2rem" }}>Inbox</h1>
-      <TaskList />
-      <button className="add-task-button">
-        <i className="fas fa-plus"></i>
-      </button>
-    </div>
-  );
-};
-
-const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const { login } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await login(email, password);
-      setError(null);
-    } catch (error) {
-      setError("Invalid email or password");
-    }
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        background: "var(--background-color)",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          background: "white",
-          padding: "2rem",
-          borderRadius: "0.5rem",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-          width: "100%",
-          maxWidth: "400px",
-        }}
-      >
-        <h2 style={{ marginBottom: "2rem", textAlign: "center" }}>Login</h2>
-        {error && (
-          <div
-            style={{
-              color: "red",
-              marginBottom: "1rem",
-              padding: "0.5rem",
-              background: "#fee2e2",
-              borderRadius: "0.25rem",
-            }}
-          >
-            {error}
-          </div>
-        )}
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem" }}>
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              borderRadius: "0.25rem",
-              border: "1px solid var(--border-color)",
-            }}
-            required
-          />
+        {/* Task List */}
+        <div className="flex-1 overflow-auto p-4">
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-12">
+              <Archive className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">
+                {searchTerm
+                  ? "No tasks match your search"
+                  : `No tasks in ${activeView}`}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredTasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onComplete={completeTask}
+                  onEdit={setEditingTask}
+                  onDelete={deleteTask}
+                  onMove={moveTaskToStatus}
+                />
+              ))}
+            </div>
+          )}
         </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem" }}>
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              borderRadius: "0.25rem",
-              border: "1px solid var(--border-color)",
-            }}
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: "0.75rem",
-            background: "var(--primary-color)",
-            color: "white",
-            border: "none",
-            borderRadius: "0.25rem",
-            cursor: "pointer",
-            marginBottom: "1rem",
+      </div>
+      {/* Add Task Modal */}
+      {showAddTask && (
+        <TaskForm
+          onSave={addTask}
+          onCancel={() => setShowAddTask(false)}
+          projects={projects}
+          contexts={contexts}
+        />
+      )}
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <TaskForm
+          task={editingTask}
+          onSave={(updatedTask: any) => {
+            updateTask(editingTask.id, updatedTask);
+            setEditingTask(null);
           }}
-        >
-          Login
-        </button>
-        <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>
-          Don't have an account?{" "}
-          <Link
-            to="/register"
-            style={{ color: "var(--primary-color)", textDecoration: "none" }}
-          >
-            Sign up
-          </Link>
-        </p>
-      </form>
+          onCancel={() => setEditingTask(null)}
+          projects={projects}
+          contexts={contexts}
+        />
+      )}
     </div>
   );
 };
 
-const Register = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const { register } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    try {
-      await register(email, password, name);
-    } catch (error) {
-      setError("Registration failed. Please try again.");
-    }
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        background: "var(--background-color)",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          background: "white",
-          padding: "2rem",
-          borderRadius: "0.5rem",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-          width: "100%",
-          maxWidth: "400px",
-        }}
-      >
-        <h2 style={{ marginBottom: "2rem", textAlign: "center" }}>Sign Up</h2>
-        {error && (
-          <div
-            style={{
-              color: "red",
-              marginBottom: "1rem",
-              padding: "0.5rem",
-              background: "#fee2e2",
-              borderRadius: "0.25rem",
-            }}
-          >
-            {error}
-          </div>
-        )}
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem" }}>
-            Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              borderRadius: "0.25rem",
-              border: "1px solid var(--border-color)",
-            }}
-            required
-          />
-        </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem" }}>
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              borderRadius: "0.25rem",
-              border: "1px solid var(--border-color)",
-            }}
-            required
-          />
-        </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem" }}>
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              borderRadius: "0.25rem",
-              border: "1px solid var(--border-color)",
-            }}
-            required
-          />
-        </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem" }}>
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              borderRadius: "0.25rem",
-              border: "1px solid var(--border-color)",
-            }}
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: "0.75rem",
-            background: "var(--primary-color)",
-            color: "white",
-            border: "none",
-            borderRadius: "0.25rem",
-            cursor: "pointer",
-            marginBottom: "1rem",
-          }}
-        >
-          Sign Up
-        </button>
-        <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            style={{ color: "var(--primary-color)", textDecoration: "none" }}
-          >
-            Login
-          </Link>
-        </p>
-      </form>
-    </div>
-  );
-};
-
-function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/*"
-            element={
-              <div className="app-container">
-                <Sidebar />
-                <MainContent />
-              </div>
-            }
-          />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
-}
-
-export default App;
+export default NirvanaGTD;

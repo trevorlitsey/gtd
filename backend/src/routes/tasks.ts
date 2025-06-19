@@ -25,10 +25,14 @@ const auth = async (
   }
 };
 
-// Get all tasks for user
+// Get all tasks for user (with optional status filter)
 router.get("/", auth, async (req: any, res: express.Response) => {
   try {
-    const tasks = await Task.find({ user: req.userId });
+    const filter: any = { user: req.userId };
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+    const tasks = await Task.find(filter);
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ message: "Error fetching tasks", error });

@@ -28,6 +28,7 @@ export interface Task {
   project?: string;
   context?: string;
   user: string;
+  status: "inbox" | "next" | "waiting" | "scheduled" | "someday" | "done";
 }
 
 export interface User {
@@ -64,8 +65,9 @@ export const authService = {
 };
 
 export const taskService = {
-  async getTasks() {
-    const response = await api.get<Task[]>("/tasks");
+  async getTasks(status?: string) {
+    const params = status ? { status } : undefined;
+    const response = await api.get<Task[]>("/tasks", { params });
     return response.data;
   },
 
