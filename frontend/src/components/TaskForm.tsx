@@ -5,7 +5,6 @@ interface TaskFormProps {
   onSave: (formData: any) => void;
   onCancel: () => void;
   projects: { id: number; name: string }[];
-  contexts: string[];
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -13,17 +12,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
   onSave,
   onCancel,
   projects,
-  contexts,
 }) => {
   const [formData, setFormData] = useState(
     task || {
       title: "",
       notes: "",
       project: "",
-      context: "",
-      dueDate: "",
-      energy: "medium",
-      timeEstimate: "",
     }
   );
 
@@ -69,54 +63,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
               </option>
             ))}
           </select>
-
-          <select
-            value={formData.context}
-            onChange={(e) =>
-              setFormData({ ...formData, context: e.target.value })
-            }
-            className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">No Context</option>
-            {contexts.map((context) => (
-              <option key={context} value={context}>
-                {context}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            value={formData.dueDate}
-            onChange={(e) =>
-              setFormData({ ...formData, dueDate: e.target.value })
-            }
-            className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-
-          <div className="flex gap-2">
-            <select
-              value={formData.energy}
-              onChange={(e) =>
-                setFormData({ ...formData, energy: e.target.value })
-              }
-              className="flex-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="low">Low Energy</option>
-              <option value="medium">Medium Energy</option>
-              <option value="high">High Energy</option>
-            </select>
-
-            <input
-              type="text"
-              placeholder="Time estimate"
-              value={formData.timeEstimate}
-              onChange={(e) =>
-                setFormData({ ...formData, timeEstimate: e.target.value })
-              }
-              className="flex-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
 
           <div className="flex gap-2 pt-4">
             <button

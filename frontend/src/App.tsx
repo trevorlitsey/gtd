@@ -6,13 +6,6 @@ import TaskItem from "./components/TaskItem";
 const NirvanaGTD = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
-  const [contexts, setContexts] = useState<string[]>([
-    "@home",
-    "@work",
-    "@phone",
-    "@computer",
-    "@errands",
-  ]);
   const [activeView, setActiveView] = useState("inbox");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddTask, setShowAddTask] = useState(false);
@@ -21,10 +14,8 @@ const NirvanaGTD = () => {
     title: "",
     notes: "",
     project: "",
-    context: "",
     dueDate: "",
     energy: "medium",
-    timeEstimate: "",
   });
 
   // Initialize with sample data
@@ -35,10 +26,6 @@ const NirvanaGTD = () => {
         title: "Review quarterly reports",
         notes: "Focus on Q4 performance metrics",
         project: "Work Review",
-        context: "@work",
-        dueDate: "2025-06-25",
-        energy: "high",
-        timeEstimate: "2h",
         status: "inbox",
         completed: false,
         createdAt: new Date().toISOString(),
@@ -48,10 +35,6 @@ const NirvanaGTD = () => {
         title: "Call dentist for appointment",
         notes: "Schedule regular checkup",
         project: "",
-        context: "@phone",
-        dueDate: "",
-        energy: "low",
-        timeEstimate: "10m",
         status: "next",
         completed: false,
         createdAt: new Date().toISOString(),
@@ -146,12 +129,6 @@ const NirvanaGTD = () => {
       id: "waiting",
       label: "Waiting For",
       count: tasks.filter((t) => t.status === "waiting" && !t.completed).length,
-    },
-    {
-      id: "scheduled",
-      label: "Scheduled",
-      count: tasks.filter((t) => t.status === "scheduled" && !t.completed)
-        .length,
     },
     {
       id: "someday",
@@ -263,7 +240,6 @@ const NirvanaGTD = () => {
           onSave={addTask}
           onCancel={() => setShowAddTask(false)}
           projects={projects}
-          contexts={contexts}
         />
       )}
       {/* Edit Task Modal */}
@@ -276,7 +252,6 @@ const NirvanaGTD = () => {
           }}
           onCancel={() => setEditingTask(null)}
           projects={projects}
-          contexts={contexts}
         />
       )}
     </div>

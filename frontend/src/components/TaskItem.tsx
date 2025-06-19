@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Edit3, Check, Trash2 } from "lucide-react";
+import { Edit3, Check, Trash2 } from "lucide-react";
 
 interface TaskItemProps {
   task: any;
@@ -16,12 +16,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onDelete,
   onMove,
 }) => {
-  const energyColors: Record<string, string> = {
-    low: "bg-green-100 text-green-800",
-    medium: "bg-yellow-100 text-yellow-800",
-    high: "bg-red-100 text-red-800",
-  };
-
   return (
     <div className="bg-white rounded-lg p-4 shadow-sm border hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
@@ -35,31 +29,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
             {task.project && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
                 {task.project}
-              </span>
-            )}
-            {task.context && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                {task.context}
-              </span>
-            )}
-            {task.energy && (
-              <span
-                className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                  energyColors[task.energy]
-                }`}
-              >
-                {task.energy} energy
-              </span>
-            )}
-            {task.timeEstimate && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
-                {task.timeEstimate}
-              </span>
-            )}
-            {task.dueDate && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
-                <Calendar className="w-3 h-3 mr-1" />
-                {new Date(task.dueDate).toLocaleDateString()}
               </span>
             )}
           </div>
@@ -90,21 +59,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       </div>
 
-      {task.status !== "inbox" && (
-        <div className="mt-3 flex gap-2">
-          <select
-            value={task.status}
-            onChange={(e) => onMove(task.id, e.target.value)}
-            className="text-sm px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="inbox">Inbox</option>
-            <option value="next">Next Actions</option>
-            <option value="waiting">Waiting For</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="someday">Someday/Maybe</option>
-          </select>
-        </div>
-      )}
+      <div className="mt-3 flex gap-2">
+        <select
+          value={task.status}
+          onChange={(e) => onMove(task.id, e.target.value)}
+          className="text-sm px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="inbox">Inbox</option>
+          <option value="next">Next Actions</option>
+          <option value="waiting">Waiting For</option>
+          <option value="someday">Someday/Maybe</option>
+        </select>
+      </div>
     </div>
   );
 };
