@@ -10,7 +10,7 @@ import {
 } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
-import { authService } from "./services/api";
+import { authService, taskService } from "./services/api";
 
 const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -19,135 +19,127 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
-  const [newTask, setNewTask] = useState({
-    title: "",
-    notes: "",
-    project: "",
-    dueDate: "",
-    energy: "medium",
-  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initialize with sample data
+  // Load all tasks from backend
   useEffect(() => {
-    const sampleTasks = [
-      {
-        id: 1,
-        title: "Review quarterly reports",
-        notes: "Focus on Q4 performance metrics",
-        project: "Work Review",
-        status: "inbox",
-        completed: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        title: "Call dentist for appointment",
-        notes: "Schedule regular checkup",
-        project: "",
-        status: "next",
-        completed: false,
-        createdAt: new Date().toISOString(),
-      },
-    ];
-
-    const sampleProjects = [
-      {
-        id: 1,
-        name: "Work Review",
-        description: "Annual performance review process",
-      },
-      {
-        id: 2,
-        name: "Home Renovation",
-        description: "Kitchen remodel project",
-      },
-    ];
-
-    setTasks(sampleTasks);
-    setProjects(sampleProjects);
+    loadAllTasks();
   }, []);
 
-  const addTask = (formData: any) => {
+  const loadAllTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const tasksData = await taskService.getTasks();
+      setTasks(tasksData);
+    } catch (err) {
+      setError("Failed to load tasks");
+      console.error("Error loading tasks:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addTask = async (formData: any) => {
     if (!formData.title.trim()) return;
-    const task = {
-      id: Date.now(),
-      ...formData,
-      status: "inbox",
-      completed: false,
-      createdAt: new Date().toISOString(),
-    };
-    setTasks([...tasks, task]);
-    setShowAddTask(false);
+
+    try {
+      const taskData = {
+        title: formData.title,
+        description: formData.notes,
+        project: formData.project,
+        status: activeView as
+          | "inbox"
+          | "next"
+          | "waiting"
+          | "scheduled"
+          | "someday"
+          | "done",
+      };
+
+      const newTask = await taskService.createTask(taskData);
+      setTasks([...tasks, newTask]);
+      setShowAddTask(false);
+    } catch (err) {
+      setError("Failed to create task");
+      console.error("Error creating task:", err);
+    }
   };
 
-  const updateTask = (id: number, updates: any) => {
-    setTasks(
-      tasks.map((task) => (task.id === id ? { ...task, ...updates } : task))
-    );
+  const updateTask = async (id: string, updates: any) => {
+    try {
+      const updatedTask = await taskService.updateTask(id, updates);
+      setTasks(tasks.map((task) => (task._id === id ? updatedTask : task)));
+    } catch (err) {
+      setError("Failed to update task");
+      console.error("Error updating task:", err);
+    }
   };
 
-  const deleteTask = (id: number) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  const deleteTask = async (id: string) => {
+    try {
+      await taskService.deleteTask(id);
+      setTasks(tasks.filter((task) => task._id !== id));
+    } catch (err) {
+      setError("Failed to delete task");
+      console.error("Error deleting task:", err);
+    }
   };
 
-  const completeTask = (id: number) => {
-    updateTask(id, { completed: true, completedAt: new Date().toISOString() });
+  const completeTask = async (id: string) => {
+    await updateTask(id, { status: "done" });
   };
 
-  const moveTaskToStatus = (id: number, status: string) => {
-    updateTask(id, { status });
+  const moveTaskToStatus = async (id: string, status: string) => {
+    await updateTask(id, { status });
   };
 
+  // Filter tasks for current view and search
   const filteredTasks = tasks.filter((task) => {
+    // First filter by current view
+    if (activeView === "done") {
+      if (task.status !== "done") return false;
+    } else {
+      if (task.status !== activeView) return false;
+    }
+
+    // Then filter by search term
     if (searchTerm) {
       return (
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.notes.toLowerCase().includes(searchTerm.toLowerCase())
+        (task.description &&
+          task.description.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
-    switch (activeView) {
-      case "inbox":
-        return task.status === "inbox" && !task.completed;
-      case "next":
-        return task.status === "next" && !task.completed;
-      case "waiting":
-        return task.status === "waiting" && !task.completed;
-      case "scheduled":
-        return task.status === "scheduled" && !task.completed;
-      case "someday":
-        return task.status === "someday" && !task.completed;
-      case "completed":
-        return task.completed;
-      default:
-        return !task.completed;
-    }
+    return true;
   });
 
   const sidebarItems = [
     {
       id: "inbox",
       label: "Inbox",
-      count: tasks.filter((t) => t.status === "inbox" && !t.completed).length,
+      count: tasks.filter((t) => t.status === "inbox").length,
     },
     {
       id: "next",
       label: "Next Actions",
-      count: tasks.filter((t) => t.status === "next" && !t.completed).length,
+      count: tasks.filter((t) => t.status === "next").length,
     },
     {
       id: "waiting",
       label: "Waiting For",
-      count: tasks.filter((t) => t.status === "waiting" && !t.completed).length,
+      count: tasks.filter((t) => t.status === "waiting").length,
     },
     {
       id: "someday",
       label: "Someday/Maybe",
-      count: tasks.filter((t) => t.status === "someday" && !t.completed).length,
+      count: tasks.filter((t) => t.status === "someday").length,
     },
     {
-      id: "completed",
+      id: "done",
       label: "Completed",
-      count: tasks.filter((t) => t.completed).length,
+      count: tasks.filter((t) => t.status === "done").length,
     },
   ];
 
@@ -227,7 +219,17 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
         </div>
         {/* Task List */}
         <div className="flex-1 overflow-auto p-4">
-          {filteredTasks.length === 0 ? (
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading tasks...</p>
+            </div>
+          ) : filteredTasks.length === 0 ? (
             <div className="text-center py-12">
               <Archive className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">
@@ -240,7 +242,7 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
             <div className="space-y-3">
               {filteredTasks.map((task) => (
                 <TaskItem
-                  key={task.id}
+                  key={task._id}
                   task={task}
                   onComplete={completeTask}
                   onEdit={setEditingTask}
@@ -263,9 +265,17 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
       {/* Edit Task Modal */}
       {editingTask && (
         <TaskForm
-          task={editingTask}
+          task={{
+            ...editingTask,
+            description: editingTask.description || editingTask.notes,
+          }}
           onSave={(updatedTask: any) => {
-            updateTask(editingTask.id, updatedTask);
+            const taskData = {
+              title: updatedTask.title,
+              description: updatedTask.description,
+              project: updatedTask.project,
+            };
+            updateTask(editingTask._id, taskData);
             setEditingTask(null);
           }}
           onCancel={() => setEditingTask(null)}

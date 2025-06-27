@@ -3,10 +3,10 @@ import { Edit3, Check, Trash2 } from "lucide-react";
 
 interface TaskItemProps {
   task: any;
-  onComplete: (id: number) => void;
+  onComplete: (id: string) => void;
   onEdit: (task: any) => void;
-  onDelete: (id: number) => void;
-  onMove: (id: number, status: string) => void;
+  onDelete: (id: string) => void;
+  onMove: (id: string, status: string) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -21,8 +21,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <h3 className="font-medium text-gray-900">{task.title}</h3>
-          {task.notes && (
-            <p className="text-sm text-gray-600 mt-1">{task.notes}</p>
+          {task.description && (
+            <p className="text-sm text-gray-600 mt-1">{task.description}</p>
           )}
 
           <div className="flex flex-wrap gap-2 mt-2">
@@ -36,7 +36,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
         <div className="flex items-center gap-1 ml-4">
           <button
-            onClick={() => onComplete(task.id)}
+            onClick={() => onComplete(task._id)}
             className="p-1 text-green-600 hover:bg-green-50 rounded"
             title="Complete task"
           >
@@ -50,7 +50,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Edit3 className="w-4 h-4" />
           </button>
           <button
-            onClick={() => onDelete(task.id)}
+            onClick={() => onDelete(task._id)}
             className="p-1 text-red-600 hover:bg-red-50 rounded"
             title="Delete task"
           >
@@ -62,7 +62,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       <div className="mt-3 flex gap-2">
         <select
           value={task.status}
-          onChange={(e) => onMove(task.id, e.target.value)}
+          onChange={(e) => onMove(task._id, e.target.value)}
           className="text-sm px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="inbox">Inbox</option>

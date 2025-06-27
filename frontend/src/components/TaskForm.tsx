@@ -16,7 +16,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [formData, setFormData] = useState(
     task || {
       title: "",
-      notes: "",
+      description: "",
       project: "",
     }
   );
@@ -42,9 +42,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
           <textarea
             placeholder="Notes"
-            value={formData.notes}
+            value={formData.description}
             onChange={(e) =>
-              setFormData({ ...formData, notes: e.target.value })
+              setFormData({ ...formData, description: e.target.value })
             }
             className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
           />

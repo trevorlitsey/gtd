@@ -34,7 +34,7 @@ router.get("/", auth, async (req: any, res: express.Response) => {
     }
     if (req.query.q) {
       const regex = new RegExp(req.query.q, "i");
-      filter.$or = [{ title: regex }, { notes: regex }];
+      filter.$or = [{ title: regex }, { description: regex }];
     }
     const tasks = await Task.find(filter);
     res.json(tasks);
