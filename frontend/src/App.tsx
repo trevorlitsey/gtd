@@ -2,8 +2,17 @@ import React, { useState, useEffect } from "react";
 import { Plus, Search, Archive } from "lucide-react";
 import TaskForm from "./components/TaskForm";
 import TaskItem from "./components/TaskItem";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+} from "react-router-dom";
+import Login from "./components/Login";
+import Register from "./components/Register";
+import { authService } from "./services/api";
 
-const NirvanaGTD = () => {
+const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [activeView, setActiveView] = useState("inbox");
@@ -171,6 +180,15 @@ const NirvanaGTD = () => {
             ))}
           </div>
         </nav>
+        {/* Logout Button */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center justify-center px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
@@ -258,4 +276,78 @@ const NirvanaGTD = () => {
   );
 };
 
-export default NirvanaGTD;
+const useAuth = () => {
+  const [user, setUser] = useState<any>(authService.getCurrentUser());
+  useEffect(() => {
+    setUser(authService.getCurrentUser());
+  }, []);
+  return { user, setUser };
+};
+
+const App: React.FC = () => {
+  const { user, setUser } = useAuth();
+  const navigate = useNavigate();
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const handleLogout = () => {
+    authService.logout();
+    setUser(null);
+    navigate("/login");
+  };
+
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      setLoginError(null);
+      const user = await authService.login(email, password);
+      setUser(user);
+      navigate("/");
+    } catch (err) {
+      setLoginError("Login failed. Please check your credentials.");
+    }
+  };
+
+  const handleRegister = async (
+    name: string,
+    email: string,
+    password: string
+  ) => {
+    try {
+      const user = await authService.register(name, email, password);
+      setUser(user);
+      navigate("/");
+    } catch (err) {
+      alert("Registration failed. Please try again.");
+    }
+  };
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={<Login onLogin={handleLogin} error={loginError} />}
+      />
+      <Route
+        path="/register"
+        element={<Register onRegister={handleRegister} />}
+      />
+      <Route
+        path="/*"
+        element={
+          user ? (
+            <NirvanaGTD onLogout={handleLogout} />
+          ) : (
+            <Login onLogin={handleLogin} error={loginError} />
+          )
+        }
+      />
+    </Routes>
+  );
+};
+
+const AppWithRouter = () => (
+  <Router>
+    <App />
+  </Router>
+);
+
+export default AppWithRouter;

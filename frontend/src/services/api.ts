@@ -41,24 +41,27 @@ export const authService = {
   async login(email: string, password: string) {
     const response = await api.post("/auth/login", { email, password });
     localStorage.setItem("token", response.data.token);
-    return response.data;
+    localStorage.setItem("user", JSON.stringify(response.data.user));
+    return response.data.user;
   },
 
-  async register(email: string, password: string, name: string) {
+  async register(name: string, email: string, password: string) {
     const response = await api.post("/auth/register", {
+      name,
       email,
       password,
-      name,
     });
     localStorage.setItem("token", response.data.token);
-    return response.data;
+    localStorage.setItem("user", JSON.stringify(response.data.user));
+    return response.data.user;
   },
 
   logout() {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
   },
 
-  getCurrentUser(): User | null {
+  getCurrentUser() {
     const userStr = localStorage.getItem("user");
     return userStr ? JSON.parse(userStr) : null;
   },
