@@ -8,6 +8,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -17,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 
 import TaskForm from "./components/TaskForm";
+import TaskItem from "./components/TaskItem";
 import SortableTaskItem from "./components/SortableTaskItem";
 import Projects from "./components/Projects";
 import {
@@ -39,6 +41,7 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [draggedTask, setDraggedTask] = useState<any | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -53,24 +56,59 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   // Handle drag end
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setDraggedTask(null);
 
     if (active.id !== over?.id) {
+      const activeTask = tasks.find((task) => task._id === active.id);
+      const overTask = tasks.find((task) => task._id === over?.id);
+
+      if (!activeTask || !overTask) return;
+
       const oldIndex = tasks.findIndex((task) => task._id === active.id);
       const newIndex = tasks.findIndex((task) => task._id === over?.id);
 
-      const newTasks = arrayMove(tasks, oldIndex, newIndex);
-      setTasks(newTasks);
+      // Check if the task is being moved to a different project
+      const activeProjectName = activeTask.project?.name || "No Project";
+      const overProjectName = overTask.project?.name || "No Project";
+      const isProjectChange = activeProjectName !== overProjectName;
 
-      // Persist the new order to the backend
       try {
-        const taskIds = newTasks.map((task) => task._id);
-        await taskService.reorderTasks(taskIds);
+        if (isProjectChange) {
+          // Update the task's project first
+          const targetProject = projects.find(
+            (p) => p.name === overProjectName
+          );
+          const projectId = targetProject?._id || null;
+
+          await taskService.updateTask(activeTask._id, { project: projectId });
+
+          // Update the task in our local state
+          const updatedTask = { ...activeTask, project: targetProject || null };
+          setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+              task._id === activeTask._id ? updatedTask : task
+            )
+          );
+        } else {
+          // Just reorder within the same project
+          const newTasks = arrayMove(tasks, oldIndex, newIndex);
+          setTasks(newTasks);
+
+          const taskIds = newTasks.map((task) => task._id);
+          await taskService.reorderTasks(taskIds);
+        }
       } catch (err) {
-        console.error("Error updating task order:", err);
-        // Optionally revert the order if the API call fails
-        // setTasks(tasks);
+        console.error("Error updating task:", err);
+        // Revert the order if the API call fails
+        setTasks(tasks);
       }
     }
+  };
+
+  const handleDragStart = (event: DragEndEvent) => {
+    const { active } = event;
+    const task = tasks.find((task) => task._id === active.id);
+    setDraggedTask(task || null);
   };
 
   // Load all tasks and projects from backend
@@ -360,6 +398,7 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
               {sortedProjectNames.map((projectName) => (
@@ -386,6 +425,17 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
                   </SortableContext>
                 </div>
               ))}
+              <DragOverlay>
+                {draggedTask ? (
+                  <TaskItem
+                    task={draggedTask}
+                    onComplete={completeTask}
+                    onEdit={setEditingTask}
+                    onDelete={deleteTask}
+                    onMove={moveTaskToStatus}
+                  />
+                ) : null}
+              </DragOverlay>
             </DndContext>
           )}
         </div>
