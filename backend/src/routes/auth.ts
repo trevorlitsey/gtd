@@ -1,11 +1,12 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
+import bcrypt from "bcryptjs";
 
 const router = express.Router();
 
 // Register new user
-router.post("/register", async (req, res) => {
+router.post("/register", async (req: any, res: express.Response) => {
   try {
     const { email, password } = req.body;
 
@@ -15,10 +16,14 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Create new user
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create user
     const user = new User({
       email,
-      password,
+      password: hashedPassword,
     });
 
     await user.save();
@@ -27,7 +32,7 @@ router.post("/register", async (req, res) => {
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "24h" }
+      { expiresIn: "7d" }
     );
 
     res.status(201).json({
@@ -38,12 +43,13 @@ router.post("/register", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Error creating user", error });
+    console.error("Error registering user:", error);
+    res.status(500).json({ message: "Error registering user", error });
   }
 });
 
 // Login user
-router.post("/login", async (req, res) => {
+router.post("/login", async (req: any, res: express.Response) => {
   try {
     const { email, password } = req.body;
 
@@ -54,7 +60,7 @@ router.post("/login", async (req, res) => {
     }
 
     // Check password
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -63,7 +69,7 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "24h" }
+      { expiresIn: "7d" }
     );
 
     res.json({
@@ -74,7 +80,8 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Error logging in", error });
+    console.error("Error logging in user:", error);
+    res.status(500).json({ message: "Error logging in user", error });
   }
 });
 

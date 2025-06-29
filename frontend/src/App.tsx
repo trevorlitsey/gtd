@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Archive, Folder } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
 import TaskForm from "./components/TaskForm";
-import TaskItem from "./components/TaskItem";
+import SortableTaskItem from "./components/SortableTaskItem";
 import Projects from "./components/Projects";
 import {
   BrowserRouter as Router,
@@ -25,6 +41,37 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [error, setError] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = tasks.findIndex((task) => task._id === active.id);
+      const newIndex = tasks.findIndex((task) => task._id === over?.id);
+
+      const newTasks = arrayMove(tasks, oldIndex, newIndex);
+      setTasks(newTasks);
+
+      // Persist the new order to the backend
+      try {
+        const taskIds = newTasks.map((task) => task._id);
+        await taskService.reorderTasks(taskIds);
+      } catch (err) {
+        console.error("Error updating task order:", err);
+        // Optionally revert the order if the API call fails
+        // setTasks(tasks);
+      }
+    }
+  };
 
   // Load all tasks and projects from backend
   useEffect(() => {
@@ -310,27 +357,36 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
               {sortedProjectNames.map((projectName) => (
-                <div key={projectName}>
+                <div key={projectName} className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     {projectName}
                   </h3>
-                  <div className="space-y-3">
-                    {groupedTasks[projectName].map((task) => (
-                      <TaskItem
-                        key={task._id}
-                        task={task}
-                        onComplete={completeTask}
-                        onEdit={setEditingTask}
-                        onDelete={deleteTask}
-                        onMove={moveTaskToStatus}
-                      />
-                    ))}
-                  </div>
+                  <SortableContext
+                    items={groupedTasks[projectName].map((task) => task._id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {groupedTasks[projectName].map((task) => (
+                        <SortableTaskItem
+                          key={task._id}
+                          task={task}
+                          onComplete={completeTask}
+                          onEdit={setEditingTask}
+                          onDelete={deleteTask}
+                          onMove={moveTaskToStatus}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
                 </div>
               ))}
-            </div>
+            </DndContext>
           )}
         </div>
       </div>

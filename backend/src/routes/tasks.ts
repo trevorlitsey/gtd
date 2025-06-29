@@ -36,9 +36,12 @@ router.get("/", auth, async (req: any, res: express.Response) => {
       const regex = new RegExp(req.query.q, "i");
       filter.$or = [{ title: regex }, { description: regex }];
     }
-    const tasks = await Task.find(filter).populate("project", "name");
+    const tasks = await Task.find(filter)
+      .populate("project", "name")
+      .sort({ order: 1 });
     res.json(tasks);
   } catch (error) {
+    console.error("Error fetching tasks:", error);
     res.status(500).json({ message: "Error fetching tasks", error });
   }
 });
@@ -46,7 +49,21 @@ router.get("/", auth, async (req: any, res: express.Response) => {
 // Create new task
 router.post("/", auth, async (req: any, res: express.Response) => {
   try {
-    const task = new Task({ ...req.body, user: req.userId });
+    // Get the highest order number for tasks with the same status and project
+    const filter: any = {
+      user: req.userId,
+      status: req.body.status || "inbox",
+    };
+    if (req.body.project) {
+      filter.project = req.body.project;
+    } else {
+      filter.project = { $exists: false };
+    }
+
+    const lastTask = await Task.findOne(filter).sort({ order: -1 });
+    const newOrder = lastTask ? lastTask.order + 1 : 0;
+
+    const task = new Task({ ...req.body, user: req.userId, order: newOrder });
     await task.save();
     const populatedTask = await Task.findById(task._id).populate(
       "project",
@@ -54,7 +71,44 @@ router.post("/", auth, async (req: any, res: express.Response) => {
     );
     res.status(201).json(populatedTask);
   } catch (error) {
+    console.error("Error creating task:", error);
     res.status(500).json({ message: "Error creating task", error });
+  }
+});
+
+// Update task order
+router.patch("/reorder", auth, async (req: any, res: express.Response) => {
+  try {
+    const { taskIds } = req.body;
+
+    if (!Array.isArray(taskIds)) {
+      console.error("Invalid taskIds format:", taskIds);
+      return res.status(400).json({ message: "taskIds must be an array" });
+    }
+
+    // Update order for each task
+    const updatePromises = taskIds.map((taskId: string, index: number) => {
+      return Task.findOneAndUpdate(
+        { _id: taskId, user: req.userId },
+        { order: index },
+        { new: true }
+      );
+    });
+
+    await Promise.all(updatePromises);
+
+    // Return updated tasks
+    const updatedTasks = await Task.find({
+      _id: { $in: taskIds },
+      user: req.userId,
+    })
+      .populate("project", "name")
+      .sort({ order: 1 });
+
+    res.json(updatedTasks);
+  } catch (error) {
+    console.error("Error updating task order:", error);
+    res.status(500).json({ message: "Error updating task order", error });
   }
 });
 
@@ -69,6 +123,7 @@ router.patch("/:id", auth, async (req: any, res: express.Response) => {
     if (!task) return res.status(404).json({ message: "Task not found" });
     res.json(task);
   } catch (error) {
+    console.error("Error updating task:", error);
     res.status(500).json({ message: "Error updating task", error });
   }
 });
@@ -83,6 +138,7 @@ router.delete("/:id", auth, async (req: any, res: express.Response) => {
     if (!task) return res.status(404).json({ message: "Task not found" });
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
+    console.error("Error deleting task:", error);
     res.status(500).json({ message: "Error deleting task", error });
   }
 });

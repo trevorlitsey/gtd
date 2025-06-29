@@ -124,6 +124,11 @@ export const taskService = {
   async deleteTask(id: string) {
     await api.delete(`/tasks/${id}`);
   },
+
+  async reorderTasks(taskIds: string[]) {
+    const response = await api.patch<Task[]>("/tasks/reorder", { taskIds });
+    return response.data;
+  },
 };
 
 export const projectService = {

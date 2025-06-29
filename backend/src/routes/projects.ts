@@ -37,6 +37,7 @@ router.get("/", auth, async (req: any, res: express.Response) => {
     const projects = await Project.find(filter).sort({ name: 1 });
     res.json(projects);
   } catch (error) {
+    console.error("Error fetching projects:", error);
     res.status(500).json({ message: "Error fetching projects", error });
   }
 });
@@ -51,6 +52,7 @@ router.get("/:id", auth, async (req: any, res: express.Response) => {
     if (!project) return res.status(404).json({ message: "Project not found" });
     res.json(project);
   } catch (error) {
+    console.error("Error fetching project:", error);
     res.status(500).json({ message: "Error fetching project", error });
   }
 });
@@ -62,6 +64,7 @@ router.post("/", auth, async (req: any, res: express.Response) => {
     await project.save();
     res.status(201).json(project);
   } catch (error) {
+    console.error("Error creating project:", error);
     res.status(500).json({ message: "Error creating project", error });
   }
 });
@@ -77,6 +80,7 @@ router.patch("/:id", auth, async (req: any, res: express.Response) => {
     if (!project) return res.status(404).json({ message: "Project not found" });
     res.json(project);
   } catch (error) {
+    console.error("Error updating project:", error);
     res.status(500).json({ message: "Error updating project", error });
   }
 });
@@ -104,6 +108,7 @@ router.delete("/:id", auth, async (req: any, res: express.Response) => {
 
     res.json({ message: "Project deleted successfully" });
   } catch (error) {
+    console.error("Error deleting project:", error);
     res.status(500).json({ message: "Error deleting project", error });
   }
 });
