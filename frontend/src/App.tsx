@@ -35,7 +35,6 @@ import { authService, taskService, projectService } from "./services/api";
 const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
-  const [activeView, setActiveView] = useState("inbox");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
@@ -44,6 +43,19 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [draggedTask, setDraggedTask] = useState<any | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Get active view from URL path
+  const activeView =
+    location.pathname === "/" ? "inbox" : location.pathname.slice(1);
+
+  // Handle active view changes and navigate to the route
+  const handleActiveViewChange = (view: string) => {
+    if (view === "inbox") {
+      navigate("/");
+    } else {
+      navigate(`/${view}`);
+    }
+  };
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -295,7 +307,7 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setActiveView(item.id)}
+                onClick={() => handleActiveViewChange(item.id)}
                 className={`w-full flex items-center justify-between px-3 py-2 text-left rounded-lg transition-colors ${
                   activeView === item.id
                     ? "bg-blue-50 text-blue-700 border border-blue-200"
@@ -549,6 +561,46 @@ const App: React.FC = () => {
         element={
           user ? (
             <Projects onLogout={handleLogout} />
+          ) : (
+            <Login onLogin={handleLogin} error={loginError} />
+          )
+        }
+      />
+      <Route
+        path="/next"
+        element={
+          user ? (
+            <NirvanaGTD onLogout={handleLogout} />
+          ) : (
+            <Login onLogin={handleLogin} error={loginError} />
+          )
+        }
+      />
+      <Route
+        path="/waiting"
+        element={
+          user ? (
+            <NirvanaGTD onLogout={handleLogout} />
+          ) : (
+            <Login onLogin={handleLogin} error={loginError} />
+          )
+        }
+      />
+      <Route
+        path="/someday"
+        element={
+          user ? (
+            <NirvanaGTD onLogout={handleLogout} />
+          ) : (
+            <Login onLogin={handleLogin} error={loginError} />
+          )
+        }
+      />
+      <Route
+        path="/done"
+        element={
+          user ? (
+            <NirvanaGTD onLogout={handleLogout} />
           ) : (
             <Login onLogin={handleLogin} error={loginError} />
           )
