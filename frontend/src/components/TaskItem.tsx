@@ -7,6 +7,7 @@ interface TaskItemProps {
   onEdit: (task: any) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, status: string) => void;
+  dragHandleProps?: any;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -15,18 +16,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onEdit,
   onDelete,
   onMove,
+  dragHandleProps,
 }) => {
   return (
     <div className="bg-white rounded-lg p-4 shadow-sm border hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
-        <div className="flex-1">
+        <div className="flex-1" {...dragHandleProps}>
           <h3 className="font-medium text-gray-900">{task.title}</h3>
           {task.description && (
             <p className="text-sm text-gray-600 mt-1">{task.description}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-1 ml-4">
+        <div className="flex items-center gap-1 ml-4 pointer-events-auto">
           <button
             onClick={() => onComplete(task._id)}
             className="p-1 text-green-600 hover:bg-green-50 rounded"
@@ -51,7 +53,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex gap-2 pointer-events-auto">
         <select
           value={task.status}
           onChange={(e) => onMove(task._id, e.target.value)}

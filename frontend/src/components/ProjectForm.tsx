@@ -45,6 +45,13 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     }
   };
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    // Only close if clicking the backdrop, not the modal content
+    if (e.target === e.currentTarget) {
+      onCancel();
+    }
+  };
+
   // Handle escape key to close form
   React.useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -71,7 +78,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold mb-4">
           {project ? "Edit Project" : "Create New Project"}

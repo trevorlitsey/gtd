@@ -34,13 +34,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style}>
       <TaskItem
         task={task}
         onComplete={onComplete}
         onEdit={onEdit}
         onDelete={onDelete}
         onMove={onMove}
+        dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
   );
