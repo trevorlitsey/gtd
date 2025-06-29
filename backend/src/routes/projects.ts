@@ -34,7 +34,7 @@ router.get("/", auth, async (req: any, res: express.Response) => {
       const regex = new RegExp(req.query.q, "i");
       filter.name = regex;
     }
-    const projects = await Project.find(filter).sort({ createdAt: -1 });
+    const projects = await Project.find(filter).sort({ name: 1 });
     res.json(projects);
   } catch (error) {
     res.status(500).json({ message: "Error fetching projects", error });

@@ -28,7 +28,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <div className="flex flex-wrap gap-2 mt-2">
             {task.project && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                {task.project}
+                {task.project.name}
               </span>
             )}
           </div>
