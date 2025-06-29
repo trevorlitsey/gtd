@@ -24,14 +24,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
           {task.description && (
             <p className="text-sm text-gray-600 mt-1">{task.description}</p>
           )}
-
-          <div className="flex flex-wrap gap-2 mt-2">
-            {task.project && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                {task.project.name}
-              </span>
-            )}
-          </div>
         </div>
 
         <div className="flex items-center gap-1 ml-4">

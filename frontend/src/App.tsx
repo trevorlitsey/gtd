@@ -150,6 +150,26 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
     return true;
   });
 
+  // Group tasks by project
+  const groupedTasks = filteredTasks.reduce(
+    (groups: { [key: string]: any[] }, task: any) => {
+      const projectName = task.project?.name || "No Project";
+      if (!groups[projectName]) {
+        groups[projectName] = [];
+      }
+      groups[projectName].push(task);
+      return groups;
+    },
+    {}
+  );
+
+  // Sort project names (No Project first, then alphabetically)
+  const sortedProjectNames = Object.keys(groupedTasks).sort((a, b) => {
+    if (a === "No Project") return -1;
+    if (b === "No Project") return 1;
+    return a.localeCompare(b);
+  });
+
   const sidebarItems = [
     {
       id: "inbox",
@@ -291,15 +311,24 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredTasks.map((task) => (
-                <TaskItem
-                  key={task._id}
-                  task={task}
-                  onComplete={completeTask}
-                  onEdit={setEditingTask}
-                  onDelete={deleteTask}
-                  onMove={moveTaskToStatus}
-                />
+              {sortedProjectNames.map((projectName) => (
+                <div key={projectName}>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {projectName}
+                  </h3>
+                  <div className="space-y-3">
+                    {groupedTasks[projectName].map((task) => (
+                      <TaskItem
+                        key={task._id}
+                        task={task}
+                        onComplete={completeTask}
+                        onEdit={setEditingTask}
+                        onDelete={deleteTask}
+                        onMove={moveTaskToStatus}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
