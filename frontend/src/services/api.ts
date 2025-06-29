@@ -18,6 +18,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401/403 responses by logging out the user
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      // Clear local storage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Dispatch custom event to notify app components
+      window.dispatchEvent(
+        new CustomEvent("auth:logout", {
+          detail: {
+            reason:
+              error.response.status === 401 ? "unauthorized" : "forbidden",
+          },
+        })
+      );
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface Task {
   _id: string;
   title: string;

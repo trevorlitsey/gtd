@@ -288,9 +288,27 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
 
 const useAuth = () => {
   const [user, setUser] = useState<any>(authService.getCurrentUser());
+
   useEffect(() => {
     setUser(authService.getCurrentUser());
+
+    // Listen for automatic logout events from API interceptor
+    const handleAuthLogout = (event: CustomEvent) => {
+      setUser(null);
+      // The event detail contains the reason (unauthorized/forbidden)
+      console.log(`Auto-logout due to: ${event.detail.reason}`);
+    };
+
+    window.addEventListener("auth:logout", handleAuthLogout as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "auth:logout",
+        handleAuthLogout as EventListener
+      );
+    };
   }, []);
+
   return { user, setUser };
 };
 
