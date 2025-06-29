@@ -51,10 +51,21 @@ export interface Task {
   completed: boolean;
   dueDate?: string;
   priority?: "low" | "medium" | "high";
-  project?: string;
+  project?: {
+    _id: string;
+    name: string;
+  };
   context?: string;
   user: string;
   status: "inbox" | "next" | "waiting" | "scheduled" | "someday" | "done";
+}
+
+export interface Project {
+  _id: string;
+  name: string;
+  user: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User {
@@ -112,6 +123,27 @@ export const taskService = {
 
   async deleteTask(id: string) {
     await api.delete(`/tasks/${id}`);
+  },
+};
+
+export const projectService = {
+  async getProjects() {
+    const response = await api.get<Project[]>("/projects");
+    return response.data;
+  },
+
+  async createProject(project: Partial<Project>) {
+    const response = await api.post<Project>("/projects", project);
+    return response.data;
+  },
+
+  async updateProject(id: string, project: Partial<Project>) {
+    const response = await api.patch<Project>(`/projects/${id}`, project);
+    return response.data;
+  },
+
+  async deleteProject(id: string) {
+    await api.delete(`/projects/${id}`);
   },
 };
 

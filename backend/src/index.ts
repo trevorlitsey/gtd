@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth";
 import taskRoutes from "./routes/tasks";
+import projectRoutes from "./routes/projects";
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/projects", projectRoutes);
 
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/gtd";

@@ -4,7 +4,7 @@ export interface ITask extends mongoose.Document {
   title: string;
   description?: string;
   status: "inbox" | "next" | "waiting" | "scheduled" | "someday" | "done";
-  project?: string;
+  project?: mongoose.Types.ObjectId;
   user: mongoose.Types.ObjectId;
 }
 
@@ -25,8 +25,8 @@ const taskSchema = new mongoose.Schema(
       default: "inbox",
     },
     project: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Project",
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,

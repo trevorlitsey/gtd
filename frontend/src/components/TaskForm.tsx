@@ -4,7 +4,7 @@ interface TaskFormProps {
   task?: any;
   onSave: (formData: any) => void;
   onCancel: () => void;
-  projects: { id: number; name: string }[];
+  projects: { _id: string; name: string }[];
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -21,6 +21,42 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
   );
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Handle initial form data for editing
+  React.useEffect(() => {
+    if (task) {
+      setFormData({
+        title: task.title || "",
+        description: task.description || task.notes || "",
+        project: task.project?._id || task.project || "",
+      });
+    }
+  }, [task]);
+
+  // Handle escape key to close form
+  React.useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCancel();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyPress);
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [onCancel]);
+
+  // Auto-focus on first input when form opens
+  React.useEffect(() => {
+    const titleInput = document.getElementById(
+      "task-title"
+    ) as HTMLInputElement;
+    if (titleInput) {
+      titleInput.focus();
+    }
+  }, []);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -118,7 +154,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             >
               <option value="">No Project</option>
               {projects.map((project) => (
-                <option key={project.id} value={project.name}>
+                <option key={project._id} value={project._id}>
                   {project.name}
                 </option>
               ))}

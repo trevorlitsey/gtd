@@ -36,7 +36,7 @@ router.get("/", auth, async (req: any, res: express.Response) => {
       const regex = new RegExp(req.query.q, "i");
       filter.$or = [{ title: regex }, { description: regex }];
     }
-    const tasks = await Task.find(filter);
+    const tasks = await Task.find(filter).populate("project", "name");
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ message: "Error fetching tasks", error });
@@ -48,7 +48,11 @@ router.post("/", auth, async (req: any, res: express.Response) => {
   try {
     const task = new Task({ ...req.body, user: req.userId });
     await task.save();
-    res.status(201).json(task);
+    const populatedTask = await Task.findById(task._id).populate(
+      "project",
+      "name"
+    );
+    res.status(201).json(populatedTask);
   } catch (error) {
     res.status(500).json({ message: "Error creating task", error });
   }
@@ -61,7 +65,7 @@ router.patch("/:id", auth, async (req: any, res: express.Response) => {
       { _id: req.params.id, user: req.userId },
       req.body,
       { new: true }
-    );
+    ).populate("project", "name");
     if (!task) return res.status(404).json({ message: "Task not found" });
     res.json(task);
   } catch (error) {

@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Archive } from "lucide-react";
+import { Plus, Search, Archive, Folder } from "lucide-react";
 import TaskForm from "./components/TaskForm";
 import TaskItem from "./components/TaskItem";
+import Projects from "./components/Projects";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
-import { authService, taskService } from "./services/api";
+import { authService, taskService, projectService } from "./services/api";
 
 const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -21,21 +23,54 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Load all tasks from backend
+  // Load all tasks and projects from backend
   useEffect(() => {
-    loadAllTasks();
+    loadAllData();
   }, []);
 
-  const loadAllTasks = async () => {
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Only trigger if not typing in an input field
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      if (event.key === "n" || event.key === "N") {
+        event.preventDefault();
+        setShowAddTask(true);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        setShowAddTask(false);
+        setEditingTask(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyPress);
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress);
+    };
+  }, []);
+
+  const loadAllData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const tasksData = await taskService.getTasks();
+      const [tasksData, projectsData] = await Promise.all([
+        taskService.getTasks(),
+        projectService.getProjects(),
+      ]);
       setTasks(tasksData);
+      setProjects(projectsData);
     } catch (err) {
-      setError("Failed to load tasks");
-      console.error("Error loading tasks:", err);
+      setError("Failed to load data");
+      console.error("Error loading data:", err);
     } finally {
       setLoading(false);
     }
@@ -47,8 +82,8 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
     try {
       const taskData = {
         title: formData.title,
-        description: formData.notes,
-        project: formData.project,
+        description: formData.description,
+        project: formData.project || undefined,
         status: activeView as
           | "inbox"
           | "next"
@@ -170,6 +205,21 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
                 )}
               </button>
             ))}
+
+            {/* Projects Navigation */}
+            <div className="pt-4 border-t border-gray-200 mt-4">
+              <button
+                onClick={() => navigate("/projects")}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg transition-colors ${
+                  location.pathname === "/projects"
+                    ? "bg-blue-50 text-blue-700 border border-blue-200"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <Folder className="w-4 h-4" />
+                <span>Projects</span>
+              </button>
+            </div>
           </div>
         </nav>
         {/* Logout Button */}
@@ -210,6 +260,7 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
               <button
                 onClick={() => setShowAddTask(true)}
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                title="Add new task (N)"
               >
                 <Plus className="w-4 h-4" />
                 Add Task
@@ -273,7 +324,7 @@ const NirvanaGTD = ({ onLogout }: { onLogout: () => void }) => {
             const taskData = {
               title: updatedTask.title,
               description: updatedTask.description,
-              project: updatedTask.project,
+              project: updatedTask.project || undefined,
             };
             updateTask(editingTask._id, taskData);
             setEditingTask(null);
@@ -357,6 +408,16 @@ const App: React.FC = () => {
       <Route
         path="/register"
         element={<Register onRegister={handleRegister} />}
+      />
+      <Route
+        path="/projects"
+        element={
+          user ? (
+            <Projects onLogout={handleLogout} />
+          ) : (
+            <Login onLogin={handleLogin} error={loginError} />
+          )
+        }
       />
       <Route
         path="/*"
